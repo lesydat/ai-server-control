@@ -1,0 +1,131 @@
+"""
+AI Server Control - Backend
+FastAPI server for monitoring AI inference servers (oMLX, llama.cpp, Ollama)
+"""
+
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import httpx
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from adapters import get_adapter
+
+# Config
+CONFIG_FILE = Path(__file__).parent / "config.json"
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load config
+with open(CONFIG_FILE) as f:
+    CONFIG = json.load(f)
+
+app = FastAPI(title="AI Server Control")
+
+
+# ============ Models ============
+
+class ModelInfo(BaseModel):
+    id: str
+    name: str
+    load_status: str  # unloaded, loaded, loading
+    activity_status: Optional[str] = None  # active, idle (None if not available)
+    memory: Optional[int] = None  # bytes
+    context_window: Optional[int] = None
+
+
+class ServerInfo(BaseModel):
+    name: str
+    type: str
+    type_name: str
+    status: str  # online, offline, error
+    endpoint: str
+    models: list[ModelInfo]
+    total_memory: Optional[int] = None
+    used_memory: Optional[int] = None
+    error: Optional[str] = None
+
+
+class MonitorResponse(BaseModel):
+    servers: list[ServerInfo]
+    timestamp: str
+
+
+# ============ API Endpoints ============
+
+@app.get("/api/status", response_model=MonitorResponse)
+async def get_status():
+    """Get status of all servers"""
+    servers = []
+    async with httpx.AsyncClient() as client:
+        for server in CONFIG["servers"]:
+            adapter = get_adapter(
+                server_type=server["type"],
+                base_url=server["base_url"],
+                api_key=server.get("api_key", "")
+            )
+            
+            # Check health
+            health = await adapter.check_health(client)
+            
+            # Get models
+            raw_models = await adapter.get_models(client) if health["status"] == "online" else []
+            models = [ModelInfo(**m) for m in raw_models]
+            
+            server_info = ServerInfo(
+                name=server["name"],
+                type=server["type"],
+                type_name=server.get("type_name", server["name"]),
+                status=health["status"],
+                endpoint=server["base_url"],
+                models=models,
+                total_memory=health.get("total_memory"),
+                used_memory=health.get("used_memory"),
+                error=health.get("error")
+            )
+            servers.append(server_info)
+    
+    return MonitorResponse(
+        servers=servers,
+        timestamp=datetime.utcnow().isoformat()
+    )
+
+
+@app.get("/config")
+async def get_config():
+    """Get non-sensitive config (public info only)"""
+    return {
+        "servers": [
+            {"name": s["name"], "type": s["type"], "type_name": s.get("type_name", s["name"]), "endpoint": s["base_url"]}
+            for s in CONFIG["servers"]
+        ],
+        "refresh_intervals": CONFIG["refresh_intervals"],
+        "default_refresh": CONFIG["default_refresh"]
+    }
+
+
+# ============ Frontend ============
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard():
+    """Serve the dashboard HTML"""
+    html_path = Path(__file__).parent / "templates" / "index.html"
+    return HTMLResponse(content=html_path.read_text())
+
+
+# Mount static files
+static_path = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

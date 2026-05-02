@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "ollama-local",
+      "type": "ollama",
+      "type_name": "Ollama",
+      "base_url": "http://localhost:11434",
+      "api_key": ""
+    }
+  ],
+  "refresh_intervals": [2, 5, 10, 30, 60],
+  "default_refresh": 10
+}
