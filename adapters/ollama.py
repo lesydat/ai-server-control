@@ -3,10 +3,11 @@ Adapter for Ollama server
 Ollama API docs: https://github.com/ollama/ollama/blob/main/docs/api.md
 """
 
+from typing import Optional
+
 import logging
 
 import httpx
-
 from .base import BaseAdapter
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,28 @@ class OllamaAdapter(BaseAdapter):
         except Exception as e:
             return {"status": "offline", "error": str(e)}
     
+    async def _get_model_show(self, client: httpx.AsyncClient, model_id: str) -> Optional[dict]:
+        """
+        Get detailed model info from /api/show including capabilities.
+        Returns dict with capabilities list (vision, tools, thinking, etc).
+        """
+        try:
+            resp = await client.post(
+                f"{self.base_url}/api/show",
+                headers=self.get_headers(),
+                json={"model": model_id, "verbose": False},
+                timeout=15
+            )
+            if resp.status_code == 200:
+                return resp.json()
+            if resp.status_code == 404:
+                return None
+            # Other errors - might be auth issue, return None
+            return None
+        except Exception as e:
+            logger.error(f"Ollama /api/show error for {model_id}: {e}")
+            return None
+
     async def get_models(self, client: httpx.AsyncClient) -> list[dict]:
         """
         Get models from Ollama
@@ -79,22 +102,58 @@ class OllamaAdapter(BaseAdapter):
                 for m in data.get("models", []):
                     name = m.get("name", "")
                     
+                    # Check if cloud/remote model
+                    is_cloud = bool(m.get("remote_model"))
+                    
                     # Model is loaded only if it's in /api/ps
                     load_status = "loaded" if name in loaded_names else "unloaded"
                     
                     # Use loaded info if available
                     info = loaded_info.get(name, {})
                     
+                    # Determine VRAM and model size
+                    # VRAM from /api/ps (actual memory used) - only for loaded models
+                    # model_size from /api/tags - for local models it's file size; for cloud models it's not meaningful
+                    vram = info.get("memory")
+                    model_size = None if is_cloud else m.get("size")
+                    
+                    # Get capabilities from /api/show (also works for cloud models)
+                    capabilities = None
+                    model_show = await self._get_model_show(client, name)
+                    if model_show:
+                        caps = model_show.get("capabilities", [])
+                        if caps:
+                            supports = []
+                            cap_map = {
+                                "vision": "Vision",
+                                "tools": "Tools",
+                                "thinking": "Thinking",
+                                "completion": "Text",
+                                "embedding": "Embedding",
+                            }
+                            for c in caps:
+                                label = cap_map.get(c)
+                                if label:
+                                    supports.append(label)
+                            if is_cloud:
+                                supports.append("Cloud")
+                            capabilities = supports if supports else None
+                    elif is_cloud:
+                        # Cloud model but couldn't get capabilities
+                        capabilities = ["Cloud"]
+                    
                     models.append({
                         "id": name,
                         "name": name,
                         "load_status": load_status,
                         "activity_status": None,  # Ollama doesn't expose this
-                        "memory": info.get("memory") or m.get("size"),
+                        "vram": vram,
+                        "model_size": model_size,
                         "context_window": info.get("context_length") or (
                             m.get("model", {}).get("context_length")
                             if isinstance(m.get("model"), dict) else None
-                        )
+                        ),
+                        "supports": capabilities
                     })
         except Exception as e:
             logger.error(f"Ollama /api/tags error: {e}")

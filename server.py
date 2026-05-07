@@ -46,8 +46,12 @@ class ModelInfo(BaseModel):
     name: str
     load_status: str  # unloaded, loaded, loading
     activity_status: Optional[str] = None  # active, idle (None if not available)
-    memory: Optional[int] = None  # bytes
+    memory: Optional[int] = None  # bytes (alias for vram, kept for backwards compatibility)
+    vram: Optional[int] = None  # bytes - VRAM used by loaded model
+    model_size: Optional[int] = None  # bytes - model file size
     context_window: Optional[int] = None
+    engine_type: Optional[str] = None  # model_type for oMLX (LLM, VLM, OCR, etc.)
+    supports: Optional[list[str]] = None  # capabilities list: Ollama uses [Vision, Tools, Thinking, Text, Embedding, Cloud]; oMLX uses [LLM, VLM, OCR, Embedding, Reranker]
 
 
 class ServerInfo(BaseModel):

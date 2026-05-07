@@ -141,6 +141,55 @@
             text-align: left;
         }
         
+        .model-type-line {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .model-details {
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .model-badges {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .model-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .badge-vram {
+            background: #1a4d1a;
+            color: #7dd87d;
+        }
+        
+        .badge-size {
+            background: #1a3d5c;
+            color: #7db8d8;
+        }
+        
+        .badge-ctx {
+            background: #4d1a4d;
+            color: #d87dd8;
+        }
+        
+        .badge-supports {
+            background: #2d1a4d;
+            color: #b87dd8;
+        }
+        
+        .badge-cloud {
+            background: #5b9bd5;
+            color: #ffffff;
+        }
+        
         .model-status {
             font-size: 0.8rem;
             padding: 4px 10px;
@@ -303,8 +352,8 @@
         
         .model-info {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            gap: 4px;
             min-width: 0;
             flex: 1;
         }
@@ -372,6 +421,12 @@
             return `${gb.toFixed(1)} GB`;
         }
         
+        function formatContext(ctx) {
+            if (!ctx) return '';
+            if (ctx >= 1000) return `${(ctx/1000).toFixed(0)}K`;
+            return ctx.toString();
+        }
+        
         function getStatusIcon(type) {
             const icons = {
                 'ollama': '<img src="/static/ollama.svg" width="24" height="24" style="vertical-align:middle">',
@@ -420,6 +475,33 @@
                     const loadText = m.load_status === 'loaded' ? '● Loaded' :
                                     m.load_status === 'loading' ? '◐ Loading' : '○ Unloaded';
                     
+                    // VRAM, model size, context, and engine type info for loaded models
+                    let extraInfo = '';
+                    if (m.vram) {
+                        extraInfo += `<span class="model-badge badge-vram" title="VRAM">${formatBytes(m.vram)}</span>`;
+                    }
+                    if (m.model_size) {
+                        extraInfo += `<span class="model-badge badge-size" title="Model size">${formatBytes(m.model_size)}</span>`;
+                    }
+                    if (m.context_window) {
+                        extraInfo += `<span class="model-badge badge-ctx" title="Context">${formatContext(m.context_window)}</span>`;
+                    }
+                    // Model type/capabilities shown as subtitle below name (separate from runtime stats)
+                    let modelTypeLine = '';
+                    if (m.supports) {
+                        if (Array.isArray(m.supports)) {
+                            // Ollama: capabilities as badges
+                            const caps = m.supports.map(c => c.charAt(0).toUpperCase() + c.slice(1));
+                            modelTypeLine = `<div class="model-badges">${caps.map(c => {
+                                const cls = c === 'Cloud' ? 'badge-cloud' : 'badge-supports';
+                                return `<span class="model-badge ${cls}">${c}</span>`;
+                            }).join('')}</div>`;
+                        } else {
+                            // oMLX: model_type as text
+                            modelTypeLine = `<div class="model-type-line">${m.supports}</div>`;
+                        }
+                    }
+                    
                     // Activity status on second line (only show if available)
                     let activityLine = '';
                     if (m.activity_status) {
@@ -439,6 +521,8 @@
                         <div class="model-item-row">
                             <div class="model-info">
                                 <span class="model-name" title="${m.id}">${m.id}</span>
+                                ${modelTypeLine}
+                                ${extraInfo ? `<div class="model-badges">${extraInfo}</div>` : ''}
                             </div>
                             <div>
                                 <button class="model-status ${statusClass} ${statusBtnClass}" ${statusOnClick} title="${statusTitle}" ${isLoading ? 'disabled' : ''}>${loadText}${activityLine}</button>
