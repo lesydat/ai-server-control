@@ -1,5 +1,5 @@
 """
-AI Server Control - Backend
+LLM Warden - Backend
 FastAPI server for monitoring AI inference servers (oMLX, llama.cpp, Ollama)
 """
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 with open(CONFIG_FILE) as f:
     CONFIG = json.load(f)
 
-app = FastAPI(title="AI Server Control")
+app = FastAPI(title="LLM Warden")
 
 
 # ============ Models ============

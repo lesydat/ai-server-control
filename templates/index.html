@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Server Control</title>
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>LLM Warden</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -403,7 +403,7 @@
     </div>
     
     <div class="header">
-        <h1><img src="/static/app-icon.svg" width="32" height="32" style="vertical-align:middle"> AI Server Control</h1>
+        <h1><img src="/static/app-icon.png" width="32" height="32" style="vertical-align:middle"> LLM Warden</h1>
     </div>
     
     <div class="controls">
@@ -424,14 +424,15 @@
         let currentInterval = 2;
         
         // Load config and saved interval
-        const savedInterval = localStorage.getItem('ai-server-control-refresh');
+        const savedInterval = localStorage.getItem('llm-warden-refresh');
         fetch('/config')
             .then(r => r.json())
             .then(config => {
                 const select = document.getElementById('refreshInterval');
-                select.innerHTML = config.refresh_intervals.map(v => 
-                    `<option value="${v}"${v === config.default_refresh ? ' selected' : ''}>Auto refresh: ${v}s</option>`
-                ).join('');
+                select.innerHTML = config.refresh_intervals.map(v => {
+                    let label = v >= 60 ? `${v/60}m` : `${v}s`;
+                    return `<option value="${v}"${v === config.default_refresh ? ' selected' : ''}>Auto refresh: ${label}</option>`;
+                }).join('');
                 // Override with saved value if exists
                 if (savedInterval && config.refresh_intervals.includes(parseInt(savedInterval))) {
                     select.value = savedInterval;
@@ -444,7 +445,7 @@
         
         document.getElementById('refreshInterval').addEventListener('change', (e) => {
             currentInterval = parseInt(e.target.value);
-            localStorage.setItem('ai-server-control-refresh', currentInterval);
+            localStorage.setItem('llm-warden-refresh', currentInterval);
             startAutoRefresh();
         });
         

@@ -34,12 +34,12 @@ def _normalize_model_type(model_type):
 
 import os
 
-# Cache directory: /data (docker) or ~/.cache/ai-server-control/ (manual)
+# Cache directory: /data (docker) or ~/.cache/llm-warden/ (manual)
 _CACHE_DIR = os.environ.get("CONFIG_DIR")  # shares CONFIG_DIR from docker
 if _CACHE_DIR:
     SESSION_CACHE_DIR = Path(_CACHE_DIR)
 else:
-    SESSION_CACHE_DIR = Path.home() / ".cache" / "ai-server-control"
+    SESSION_CACHE_DIR = Path.home() / ".cache" / "llm-warden"
 SESSION_CACHE_FILE = SESSION_CACHE_DIR / "omlx_sessions.json"
 
 

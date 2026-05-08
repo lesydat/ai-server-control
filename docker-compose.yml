@@ -1,6 +1,6 @@
 services:
-  ai-server-control:
-    container_name: ai-server-control
+  llm-warden:
+    container_name: llm-warden
     build: .
     ports:
       - 8000:8000
@@ -9,4 +9,4 @@ services:
 
 volumes:
   data:
-    name: ai-server-control
+    name: llm-warden

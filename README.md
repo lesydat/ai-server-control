@@ -1,6 +1,9 @@
-# AI Server Control
+# LLM Warden
 
 Web dashboard for monitoring AI inference servers (oMLX, llama.cpp, Ollama) with a clean, intuitive interface.
+
+![LLM Warden Logo](logo.png)
+![LLM Warden Dashboard](screenshot.png)
 
 ---
 
@@ -108,11 +111,11 @@ docker-compose up -d
 Or with docker run:
 
 ```bash
-docker build -t ai-server-control .
+docker build -t llm-warden .
 docker run -p 8000:8000 \
   -v $(pwd)/config.json:/data/config.json:ro \
-  -v ai-server-control:/data \
-  ai-server-control
+  -v llm-warden:/data \
+  llm-warden
 ```
 
 **3. Open dashboard**
@@ -135,7 +138,7 @@ Visit: **http://localhost:8000**
 
 ### Manual Mode
 - **Config**: `./config.json` (project directory)
-- **Session cache**: `~/.cache/ai-server-control/omlx_sessions.json`
+- **Session cache**: `~/.cache/llm-warden/omlx_sessions.json`
 
 ### Docker Mode
 - **Config**: `/data/config.json` (mounted from host)
@@ -152,7 +155,7 @@ Visit: **http://localhost:8000**
 ## 🏗️ Project Structure
 
 ```
-ai-server-control/
+llm-warden/
 ├── server.py             # FastAPI backend
 ├── adapters/             # Server adapters
 │   ├── base.py
@@ -175,7 +178,7 @@ GNU GPL-3.0
 
 ---
 
-# AI Server Control (Vietnamese)
+# LLM Warden (Vietnamese)
 
 Dashboard theo dõi trạng thái các AI inference servers (oMLX, llama.cpp, Ollama) với giao diện web đẹp mắt.
 
@@ -285,10 +288,10 @@ docker-compose up -d
 Hoặc với docker run:
 
 ```bash
-docker build -t ai-server-control .
+docker build -t llm-warden .
 docker run -p 8000:8000 \
-  -v ai-server-control-data:/data \
-  ai-server-control
+  -v llm-warden-data:/data \
+  llm-warden
 ```
 
 **3. Mở dashboard**
@@ -311,7 +314,7 @@ Truy cập: **http://localhost:8000**
 
 ### Chế độ Thủ công
 - **Config**: `./config.json` (thư mục project)
-- **Session cache**: `~/.cache/ai-server-control/omlx_sessions.json`
+- **Session cache**: `~/.cache/llm-warden/omlx_sessions.json`
 
 ### Chế độ Docker
 - **Config**: `/data/config.json` (Docker volume)
@@ -328,7 +331,7 @@ Truy cập: **http://localhost:8000**
 ## 🏗️ Cấu trúc Project
 
 ```
-ai-server-control/
+llm-warden/
 ├── server.py             # FastAPI backend
 ├── adapters/             # Adapter cho từng loại server
 │   ├── base.py
