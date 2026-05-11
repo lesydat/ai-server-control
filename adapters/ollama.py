@@ -156,6 +156,8 @@ class OllamaAdapter(BaseAdapter):
                     loaded_names.add(name)
                     loaded_info[name] = {
                         "memory": rm.get("size_vram", rm.get("size")),
+                        "size_vram": rm.get("size_vram"),
+                        "total_vram": rm.get("size"),  # includes KV cache overhead
                         "context_length": rm.get("context_length")
                     }
         except Exception as e:
@@ -183,7 +185,8 @@ class OllamaAdapter(BaseAdapter):
                     is_cloud = bool(m.get("remote_model"))
                     
                     # Model is loaded only if it's in /api/ps
-                    load_status = "loaded" if name in loaded_names else "unloaded"
+                    is_loaded = name in loaded_names
+                    load_status = "loaded" if is_loaded else "unloaded"
                     
                     # Use loaded info if available
                     info = loaded_info.get(name, {})
@@ -191,7 +194,7 @@ class OllamaAdapter(BaseAdapter):
                     # Determine VRAM and model size
                     # VRAM from /api/ps (actual memory used) - only for loaded models
                     # model_size from /api/tags - for local models it's file size; for cloud models it's not meaningful
-                    vram = info.get("memory")
+                    vram = info.get("memory") if is_loaded else None
                     model_size = None if is_cloud else m.get("size")
                     
                     # Get capabilities from cache/prefetched data
@@ -207,6 +210,7 @@ class OllamaAdapter(BaseAdapter):
                         "load_status": load_status,
                         "activity_status": None,  # Ollama doesn't expose this
                         "vram": vram,
+                        "total_vram": info.get("total_vram") if is_loaded else None,
                         "model_size": model_size,
                         "context_window": info.get("context_length") or (
                             m.get("model", {}).get("context_length")

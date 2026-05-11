@@ -48,7 +48,8 @@ class ModelInfo(BaseModel):
     load_status: str  # unloaded, loaded, loading
     activity_status: Optional[str] = None  # active, idle (None if not available)
     memory: Optional[int] = None  # bytes (alias for vram, kept for backwards compatibility)
-    vram: Optional[int] = None  # bytes - VRAM used by loaded model
+    vram: Optional[int] = None  # bytes - actual VRAM used (size_vram from /api/ps)
+    total_vram: Optional[int] = None  # bytes - total memory including KV cache (size from /api/ps)
     model_size: Optional[int] = None  # bytes - model file size
     context_window: Optional[int] = None
     engine_type: Optional[str] = None  # model_type for oMLX (LLM, VLM, OCR, etc.)
